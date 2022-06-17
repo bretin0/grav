@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html><head></head><body><canvas id="gravCan" style="background-color: black;" /></body>
+<script language="JavaScript">
+    (function () {
+        let nSuns = 2;
+        let nPlanets = 7;
+        let g = .06;
+        let suns = [];
+        let planets = [];
+        let canvas = document.querySelector('#gravCan');
+        let w = canvas.width = window.innerWidth;//.getElementById('grav').offsetWidth;
+        let h = canvas.height = window.innerHeight;// document.getElementById('grav').offsetHeight;
+        let ctx = canvas.getContext('2d');
+        
+        let br = (max) => {
+            return max * Math.random();
+        }
+
+        let cr = () => {
+            let letters = '0123456789ABCDEF';
+            let color = '#';
+            for (let i = 0; i < 8; i++) {
+                color += letters[Math.floor(Math.random() * 16)];
+            }
+            return color;
+        }
+
+        let plot = (obj) => {
+            ctx.lineWidth = obj.r;
+            ctx.fillStyle = ctx.strokeStyle = obj.c;
+            ctx.beginPath();
+            if( obj.r > 1) {
+                ctx.arc(obj.pos.x, obj.pos.y, obj.r, 0, 2 * Math.PI, false);
+                ctx.fill();
+            }
+            ctx.moveTo(obj.pos.x,obj.pos.y);
+            ctx.lineTo(obj.ppos.x,obj.ppos.y);
+            ctx.stroke();
+        }
+
+        let init = () => {
+            let border = 0.2;
+            ctx.clearRect(0, 0, w, h);
+            planets=[];
+            suns=[];
+
+            for( var i = 0; i < nSuns; i++) {
+                let s = { pos: { x: 0, y: 0 }, ppos: { x: 0, y: 0 }, r:3, mass: br(1000), c: 'yellow', v: { x: br(0), y: br(0)} };
+                s.pos.x = w*border + br(w-w*border*2);
+                s.pos.y = h*border + br(h-h*border*2);
+                s.ppos.x = s.pos.x;
+                s.ppos.y = s.pos.y;
+                suns.push( s );
+                plot(s);
+            }
+            for( var i = 0; i < nPlanets; i++) {
+                let p = { pos: { x: 0, y: 0 }, ppos: {x:0,y:0}, r: 1, mass: 1, c: cr(), v: { x: br(2), y: br(2)} };
+                p.pos.x = br(1) > 0.5 ? -10 : w+10;
+                p.pos.y = br(1) > 0.5 ? -10 : h+10;
+                p.pos.x = w*border + br(w-w*border*2);
+                p.pos.y = h*border + br(h-h*border*2);
+                p.v.x = br(5) * (Math.random() > 0.5 ? 1 : -1);
+                p.v.y = br(5) * (Math.random() > 0.5 ? 1 : -1);
+                p.ppos.x = p.pos.x;
+                p.ppos.y = p.pos.y;
+                planets.push( p );
+            }
+        }
+
+        let gravitate = (planet,sun) => {
+            let diffX = sun.pos.x - planet.pos.x;
+            let diffY = sun.pos.y - planet.pos.y;
+            r = Math.max( Math.hypot(diffX,diffY) / 10, 3);
+            planet.v.x += Math.sin(Math.atan(diffX / Math.abs(diffY))) * g * sun.mass / Math.max(Math.pow(r, 2), 1);
+            planet.v.y += Math.sin(Math.atan(diffY / Math.abs(diffX))) * g * sun.mass / Math.max(Math.pow(r, 2), 1);
+            planet.pos.x += planet.v.x;
+            planet.pos.y += planet.v.y;
+        }
+
+        let dropObPlanets = () => {
+            let ob = 1.5;
+            let outs = [];
+            for( var i = 0; i < planets.length; i++ ) {
+                if( Math.abs(planets[i].pos.x) > window.innerWidth*ob || Math.abs(planets[i].pos.y) > window.innerWidth*ob )
+                    outs.push(i);
+            }
+            for( var i = 0; i < outs.length; i++)
+                planets.splice(outs[i],1);
+        }
+
+        let tick = () => {
+            dropObPlanets();
+            if( planets.length==0)
+                init();
+
+            for( var i = 0; i < planets.length; i++ ) {
+                planets[i].ppos.x = planets[i].pos.x;
+                planets[i].ppos.y = planets[i].pos.y;
+            }
+            for( var i = 0; i < planets.length; i++ ) {
+                for( var j = 0; j < nSuns; j++ ) {
+                    gravitate(planets[i], suns[j]);
+                }
+                plot(planets[i]);
+                for( var j = 0; j < nSuns; j++ ) {
+                    plot(suns[j]);
+                }
+            }
+        }
+
+        init();
+        setInterval( tick, 0);
+        let click = () => {
+            init();
+            let canvas = document.querySelector('#gravCan');
+            if(canvas.requestFullScreen)
+                canvas.requestFullScreen();
+            else if(canvas.webkitRequestFullScreen)
+                canvas.webkitRequestFullScreen();
+            else if(canvas.mozRequestFullScreen)
+                canvas.mozRequestFullScreen();
+        }
+        canvas.addEventListener('click', click, false);
+    })();
+
+</script>
+
+</html>
